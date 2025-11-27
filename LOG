@@ -3,6 +3,8 @@ Problemas encontrados:
 - Problemas para entender los datos: 
   - Datos sin columnas bien definidas; se dice a qué pertenece mas no a qué tipo de dato es (grados, inclinación, etc.).
   - RUL (Remaining Useful Life) difiere en valores por cada unidad. Es difícil establecer un valor para predecir.
+- Problemas al entenar con el dataset: 
+  - Al utilizar todas las columnas, el modelo interpreta max_cycle - cycle y predice el 100% de los datos. Solución: no usar max_cycle en el modelo.
 
 
 Trabajando en FD001:
@@ -14,4 +16,3 @@ He realizado 3 cambios en el dataset original (el dataset vino completamente lim
 )
 2. Añadí dos columnas nuevas: (max_cycle, RUL)
 3. Guardé el nuevo dataset en un csv.
-
