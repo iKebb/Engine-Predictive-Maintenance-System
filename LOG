@@ -1,0 +1,17 @@
+Problemas encontrados:
+- Dataset sin header. Se tuvo que cargar el dataset e imputar manualmente los headers.
+- Problemas para entender los datos: 
+  - Datos sin columnas bien definidas; se dice a qué pertenece mas no a qué tipo de dato es (grados, inclinación, etc.).
+  - RUL (Remaining Useful Life) difiere en valores por cada unidad. Es difícil establecer un valor para predecir.
+
+
+Trabajando en FD001:
+
+He realizado 3 cambios en el dataset original (el dataset vino completamente limpio):
+
+1. Añadí manualmente el nombre de las columnas (
+  unit, cycle, op_setting (1, 2, 3), sensor_measure(1, 2, 3..., 21)
+)
+2. Añadí dos columnas nuevas: (max_cycle, RUL)
+3. Guardé el nuevo dataset en un csv.
+
