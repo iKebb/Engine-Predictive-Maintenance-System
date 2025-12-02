@@ -36,4 +36,30 @@ Los sensores se agrupan por funciones:
 - **Entalpía**: (entalpía del aire extraído para sistemas neumáticos) y los flujos de enfriamiento, como `W31` (HPT) y `W23` (LPT). Estos dos últimos aumentan con el daño, asumiblemente porque el sistema de control eleva el sangrado de aire frío para proteger las palas de las turbinas frente al aumento de temperatura.
 
 - **Señales de comando**: son velocidades demandadas por el piloto a través del `TRA`. No son respuestas del motor, son inputs de controlador; no son outputs de daño y no cambian con la degradación.
+
+La degradación del módulo HPC se modela como una pérdida exponencial simultánea de flujo (f) y eficiencia (e): donde (d) es el deterioro inicial, y (a), (b) controla la velocidad de degradación. El motor opera ajustando el combustible y velocidades para mantener el empuje, esto no se refleja directamente en los sensores como daño medible, sino la respuesta del sistema a ese daño. Es importante saber esto porque el criterio de fallo ocurre cuando el Health Index es igual a 0, definido como el mínimo de los márgenes operativos. El margen de temperatura de escape (EGT) es casi igual al valor obtenido del módulo T50, que recordemos, es la temperatura total registrada en el LPT.
+
+- **sensor_measure_3 (`T30`)** *Temperatura total a la salida del `HPC` (High-Pressure Turbine).
+  - Aumenta con la degradación: a menor eficiencia del `HPC` hay más pérdidas por fricción, lo que se traduce como más calor.
+  - Correlación con pérdida de la eficiencia. A mayor Exhaust Gas Temperature `EGT` es probable que haya perdida de eficiencia y flujo.
+- **sensor_measure_4 (`T50`)** *Temperatura total de la salida del `LPT` (Low-Pressure Turbine)
+  - Aumenta significativamente con el daño. Cuando el `EGT` excede su límite ocurre el fallo.
+- **sensor_measure_7 (`P30`)** *Presión total a la salida del `HPC*
+  - Disminuye con la pérdida de fluje/eficiencia en el `HPC`. Cuanta menor presión, el sensor muestra menor margen en el stall.
+- **sensor_measure_11 (`Ps30`)** *Presión estática a la salida del `HPC`*
+  - Es más sensible que `P30` debido a que no incluye componente cinética, lo que ayuda a capturar mejor la pérdida de presión.
+  - La caída en `Ps30` obliga al controlador a inyectar más combustible, lo cual es clave para detectar el esfuerzo creciente en el sistema combustor hacia la salida del motor.
+- **sensor_measure_12 (`phi`)** *Flujo de combustible*
+  - Aumenta fuertemente cuanto mayor es la degradación del módulo.
+  - Es una medida adimensional de carga de tensión sobre el motor: si `Ps30` cae, para mantener el empuje se debe incrementar el combustible para la combustión y fuerza de salida, por lo tanto, `phi`crece.
+- Esto se relaciona directamente a la cantidad de daño acumulado sobre el módulo `HPC`, pues la cantidad de desgaste es mayor proporcionalmente a la cantidad de combustión; y tiene poca sensibilidad a condiciones de vuelo al depender exclusivamente de los componentes y no de la degradación atmosférica (SEA LEVEL)
+- **sensor_measure_14 (`NRc`)** *Velocidad de corrección para el núcleo en vuelo*
+  - Aumenta porque el `FADEC` (el control te autoridad total digital del motor) obliga la aceleración de los núcleos del módulo ??? de los combustores para compensar la pérdida de presión en `HPC`. 
+  - Esta medida es más robusta que la dada por el measure_sensor_9 `Nc` (Core Speed).
+- **sensor_measure_20 and sensor_measure_21 (`W31`, `W32`)** *Sangrado del aire por enfriamiento de las `HPT` y `LPT`*
+  - Estos ambos valores aumentan cuando incrementa la temperatura como ajuste de supervivencia del motor para evitar sobrecalentamiento.
 ```
+
+Al final, graciosamente, el mejor resultado lo dio el XGBR usando el dataset FD001_enhanced.csv que es el dataset original con feature engineering.
+---
+
