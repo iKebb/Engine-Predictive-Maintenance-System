@@ -1,3 +1,7 @@
+=======================<>=======================
+
+SPANISH LOG
+
 Problemas encontrados:
 - Dataset sin header. Se tuvo que cargar el dataset e imputar manualmente los headers.
 - Problemas para entender los datos: 
@@ -63,3 +67,70 @@ La degradación del módulo HPC se modela como una pérdida exponencial simultá
 Al final, graciosamente, el mejor resultado lo dio el XGBR usando el dataset FD001_enhanced.csv que es el dataset original con feature engineering.
 ---
 
+=======================<>=======================
+
+ENGLISH LOG
+
+Issues encountered:
+- Dataset without headers. The dataset had to be loaded and headers manually imputed.
+- Issues understanding the data:
+  - Data without well-defined columns; it's stated what they belong to but not what type of data they are (degrees, inclination, etc.).
+  - RUL (Remaining Useful Life) differs in values for each unit. It's difficult to establish a value to predict.
+- Issues when training with the dataset:
+  - When using all columns, the model interprets max_cycle - cycle and predicts 100% of the data. Solution: do not use max_cycle in the model.
+
+Working on FD001:
+
+I have made 3 changes to the original dataset (the dataset came completely clean):
+
+1. I manually added the column names (
+  unit, cycle, op_setting (1, 2, 3), sensor_measure(1, 2, 3..., 21)
+)
+2. I added two new columns: (max_cycle, RUL)
+3. I saved the new dataset to a CSV.
+4. RFR and XGBR work like a charm without treating outliers; by removing the problematic features
+  I get almost 100% prediction ONLY on the training data. When validating, this prediction
+  drops problematically to 78%, which is quite low.
+
+Theory from the PDF:
+
+```markdown
+The 21 sensors come from a simulation of a commercial turbojet engine with ~90,000 lbf of thrust, using NASA's C-MAPSS simulator. It is designed to reflect real engine measurements and their evolution over time, capturing progressive damage—modeled as an exponential loss of **flow** and **efficiency** in the High-Pressure Compressor (HPC), which is the only degraded module in the FD001 dataset.
+
+The sensors are grouped by function:
+
+- **Total Temperatures (T)**: measure thermal energy. `T2`, `T24`, `T30`, and `T50` are part of the Exhaust Gas Temperature `(EGT)`. Among these, `T30` and `T50` (corresponding to sensors 3 and 4) provide the clearest signals sensitive to HPC degradation damage—the engine requires more fuel to maintain thrust power, which raises downstream temperatures (SEA LEVEL).
+
+- **Pressures (P)**: `P2`, `P15`, `P30`, `Ps30` are all pressure gauges, but we highlight among these `P30` and `Ps30`, with `P30` (corresponding to sensor 7) being the *TOTAL PRESSURE AT THE HPC OUTLET* and `Ps30` (corresponding to sensor 11), our most important pressure gauge, corresponding to the *STATIC PRESSURE* at the same location.
+
+- **Dimensionless ratios (environment)**: `epr` is our engine pressure ratio. This decreases very smoothly with damage, as does the `BPR` (Bypass Ratio). Here we are interested in `farB` (fuel-to-air ratio in the combustor) and `phi` (fuel flow / Ps30), which increase since more fuel injection is required to maintain thrust given the drop in `Ps30`, the HPC pressure gauge.
+
+- **Enthalpy**: (enthalpy of air extracted for pneumatic systems) and cooling flows, such as `W31` (HPT) and `W23` (LPT). These last two increase with damage, presumably because the control system increases cold air bleed to protect turbine blades from rising temperature.
+
+- **Command signals**: are speeds demanded by the pilot via `TRA`. They are not engine responses; they are controller inputs, not damage outputs, and do not change with degradation.
+
+The degradation of the HPC module is modeled as a simultaneous exponential loss of flow (f) and efficiency (e): where (d) is the initial deterioration, and (a), (b) control the degradation rate. The engine operates by adjusting fuel and speeds to maintain thrust; this is not directly reflected in the sensors as measurable damage, but rather the system's response to that damage. It's important to know this because the failure criterion occurs when the Health Index equals 0, defined as the minimum of the operational margins. The Exhaust Gas Temperature (EGT) margin is almost equal to the value obtained from module T50, which, recall, is the total temperature recorded at the LPT.
+
+- **sensor_measure_3 (`T30`)** *Total temperature at the `HPC` outlet (High-Pressure Turbine).
+  - Increases with degradation: lower HPC efficiency leads to more friction losses, resulting in more heat.
+  - Correlates with loss of efficiency. Higher Exhaust Gas Temperature `EGT` likely indicates loss of efficiency and flow.
+- **sensor_measure_4 (`T50`)** *Total temperature at the `LPT` outlet (Low-Pressure Turbine)
+  - Increases significantly with damage. Failure occurs when the `EGT` exceeds its limit.
+- **sensor_measure_7 (`P30`)** *Total pressure at the `HPC` outlet*
+  - Decreases with the loss of flow/efficiency in the `HPC`. Lower pressure shows less margin in the stall sensor.
+- **sensor_measure_11 (`Ps30`)** *Static pressure at the `HPC` outlet*
+  - More sensitive than `P30` because it does not include a kinetic component, helping to better capture pressure loss.
+  - The drop in `Ps30` forces the controller to inject more fuel, which is key to detecting increasing stress on the combustor system toward the engine outlet.
+- **sensor_measure_12 (`phi`)** *Fuel flow*
+  - Increases strongly with greater module degradation.
+  - It is a dimensionless measure of stress load on the engine: if `Ps30` drops, to maintain thrust, fuel must be increased for combustion and output force, therefore `phi` increases.
+- This is directly related to the amount of damage accumulated on the `HPC` module, as the amount of wear is proportionally greater with the amount of combustion; and it has low sensitivity to flight conditions as it depends exclusively on components and not on atmospheric degradation (SEA LEVEL).
+- **sensor_measure_14 (`NRc`)** *Corrected core speed in flight*
+  - Increases because the `FADEC` (Full Authority Digital Engine Control) forces the acceleration of the combustor module's ??? cores to compensate for the pressure loss in the `HPC`.
+  - This measurement is more robust than that given by measure_sensor_9 `Nc` (Core Speed).
+- **sensor_measure_20 and sensor_measure_21 (`W31`, `W32`)** *Cooling air bleed for `HPT` and `LPT`*
+  - Both values increase when temperature rises as a motor survival adjustment to avoid overheating.
+```
+
+In the end, amusingly, the best result was given by XGBR using the FD001_enhanced.csv dataset, which is the original dataset with feature engineering.
+---
